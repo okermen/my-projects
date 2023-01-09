@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  'AWS::CloudFormation::Designer':
+    f7e2e830-963e-4300-a3a3-dfbd8e284e75:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 500
+        'y': 30
+      z: 0
+      embeds: []
+    ac65563c-488b-416d-b66f-456dcebc78d7:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 270
+        'y': 30
+      z: 0
+      embeds: []
+      isassociatedwith:
+        - f7e2e830-963e-4300-a3a3-dfbd8e284e75
+Resources:
+  InstanceSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: AllowEC2Traffic
+      GroupDescription: Enable SSH access and HTTP access on the inbound port
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: InstanceSecurityGroup
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: f7e2e830-963e-4300-a3a3-dfbd8e284e75
+  Project101instance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      ImageId: ami-0b5eea76982371e91
+      InstanceType: t2.micro
+      KeyName: okermenpair
+      Tags:
+        - Key: Name
+          Value: Web server of Project101
+      SecurityGroupIds:
+        - !Ref InstanceSecurityGroup
+      UserData: !Base64 
+        'Fn::Sub': |
+          #!/bin/bash 
+          yum update -y 
+          yum install -y httpd  
+          systemctl start httpd  
+          systemctl enable httpd  
+          chmod -R 777 /var/www/html
+          yum install git -y
+          git clone https://github.com/okermen/project-101.git
+          cd project-101/static-web
+          cp * /var/www/html/
+  Project101EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref Project101instance
+
+
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: ac65563c-488b-416d-b66f-456dcebc78d7
+Outputs:
+  WebsiteURL:
+    Value: !Sub http://${Project101EIP}
+    Description: Kittens Carousel Application Website URL
